@@ -15,7 +15,7 @@
   (cvar)
   (visited?))
 
-(define (cgraph-add-cvar cgraph cvar)
+(define (cgraph-add-cvar! cgraph cvar)
   (cgraph-cvars-set! cgraph (cons (make-cgraph-node cvar #f)
                                   (cgraph-cvars cgraph)))
   cgraph)

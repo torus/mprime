@@ -2,17 +2,20 @@
 ;; cfunc: function describing the constraint
 ;; cgraph: constraint system graph
 
-(define (cvar-create val def?)
-  (let1 cvar `((value . ,val)
-               (defined? . ,def?))
-    cvar))
+(use gauche.record)
 
-;; vars: [(cvar . visited)]
-(define (cgraph-create vars)
-  (acons 'vars vars ()))
+(define-record-type cvar #t #t
+  (value)
+  (defined?))
+
+(define-record-type cgraph #t #t
+  (cvars))
+
+(define-record-type cgraph-node #t #t
+  (cvar)
+  (visited?))
 
 (define (cgraph-add-cvar cgraph cvar)
-  (cgraph-create (cons `((cvar . ,cvar)
-                        (visited? . #f))
-                      (cdr (assq 'vars cgraph)))))
-
+  (cgraph-cvars-set! cgraph (cons (make-cgraph-node cvar #f)
+                                  (cgraph-cvars cgraph)))
+  cgraph)

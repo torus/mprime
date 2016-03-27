@@ -23,11 +23,6 @@
   (inputs)
   (outputs))
 
-;; (define (cgraph-add-cvar! cgraph cvar)
-;;   (cgraph-cvars-set! cgraph (cons (make-cgraph-node cvar #f)
-;;                                   (cgraph-cvars cgraph)))
-;;   cgraph)
-
 (define-record-type cfunc #t #t proc)
 
 (define (cgraph-func-node-update! cfunc-node)

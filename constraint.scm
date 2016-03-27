@@ -10,9 +10,6 @@
   (value)
   (defined?))
 
-(define-record-type cgraph #t #t
-  (cvars))
-
 (define-record-type cgraph-var-node #t #t
   cvar
   (visited?)
@@ -43,3 +40,28 @@
       (let-values ((vars (apply (cfunc-proc cfunc) (map cvar-value inputs))))
         vars)
       #f))
+
+
+;; Unitities
+
+(define (cgraph-new-var-node)
+  (make-cgraph-var-node (make-cvar #f #f) #f ()))
+
+(define (cgraph-new-func-node proc)
+  (make-cgraph-func-node (make-cfunc proc) () ()))
+
+(define (cgraph-connect! cfunc-node inputs outputs)
+  (for-each (lambda (node)
+              (cgraph-var-node-outputs-set! node (cons cfunc-node
+                                                       cgraph-var-node-outputs-set!)))
+            inputs)
+  (cgraph-func-node-inputs-set! cfunc-node inputs)
+  (cgraph-func-node-outputs-set! cfunc-node outputs))
+
+(define (cgraph-update-vars! node-value-pairs)
+  (for-each (lambda (pair)
+              (let1 cvar (cgraph-var-node-cvar (car pair))
+                (cvar-value-set! cvar (cdr pair))
+                (cvar-defined?-set! cvar #t))
+              node-value-pairs)
+            node-value-pairs))

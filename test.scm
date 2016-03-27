@@ -59,5 +59,17 @@
               (list (map cvar-value `(,v1 ,v2 ,v3 ,v4))
                     (map cvar-defined? `(,v1 ,v2 ,v3 ,v4))))))))
 
+(test "cgraph-connect! and cgraph-update-vars!" 8
+      (lambda ()
+        (let ((n1 (cgraph-new-var-node))
+              (n2 (cgraph-new-var-node))
+              (n3 (cgraph-new-var-node))
+              (nf (cgraph-new-func-node +)))
+          (cgraph-connect! nf `(,n1 ,n2) `(,n3))
+          (cgraph-update-vars! `((,n1 . 5) (,n2 . 3)))
+          (cgraph-func-node-update! nf)
+
+          (cvar-value (cgraph-var-node-cvar n3))
+          )))
 
 (test-end :exit-on-failure #t)

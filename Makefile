@@ -1,2 +1,2 @@
 check :
-	gosh test.scm > test.log
+	gosh test.scm

@@ -59,20 +59,23 @@
               (list (map cvar-value `(,v1 ,v2 ,v3 ,v4))
                     (map cvar-defined? `(,v1 ,v2 ,v3 ,v4))))))))
 
-(test "cgraph-connect! and cgraph-update-vars!" 8
+(test "cgraph-connect! and cgraph-set-cvars!" 8
       (lambda ()
         (let ((n1 (cgraph-new-var-node))
               (n2 (cgraph-new-var-node))
               (n3 (cgraph-new-var-node))
               (nf (cgraph-new-func-node +)))
           (cgraph-connect! nf `(,n1 ,n2) `(,n3))
-          (cgraph-update-vars! `((,n1 . 5) (,n2 . 3)))
+          (cgraph-set-cvars! `((,n1 . 5) (,n2 . 3)))
           (cgraph-func-node-update! nf)
 
           (cvar-value (cgraph-var-node-cvar n3))
           )))
 
-(test "Fahrenheit-Celsius example from SICP" 100
+(define (desc text proc)
+  (proc))
+
+(desc "Fahrenheit-Celsius example from SICP"
       (lambda ()
         (let ((nC (cgraph-new-var-node))
               (nu (cgraph-new-var-node))
@@ -91,11 +94,41 @@
           (cgraph-connect! n+32 `(,nv) `(,nF))
           (cgraph-connect! n-32 `(,nF) `(,nv))
 
-          (cgraph-update-vars! `((,nF . 212)))
+          (cgraph-set-cvars! `((,nF . 212)))
           (cgraph-func-node-update! n-32)
           (cgraph-func-node-update! n*5)
           (cgraph-func-node-update! n/9)
 
-          (cvar-value (cgraph-var-node-cvar nC)))))
+          (test* "212F in Celsius" 100 (cvar-value (cgraph-var-node-cvar nC)))
+
+          (cgraph-set-cvars! `((,nC . 25)))
+          (cgraph-func-node-update! n*9)
+          (cgraph-func-node-update! n/5)
+          (cgraph-func-node-update! n+32)
+
+          (test* "25C in Fahrenheit" 77 (cvar-value (cgraph-var-node-cvar nF)))
+          )))
+
+(desc "Graph"
+      (lambda ()
+        (let ((n1 (cgraph-new-var-node))
+              (n3 (cgraph-new-var-node))
+              (n5 (cgraph-new-var-node))
+              (n6 (cgraph-new-var-node))
+              (n8 (cgraph-new-var-node))
+              (f2 (cgraph-new-func-node +))
+              (f4 (cgraph-new-func-node *))
+              (f7 (cgraph-new-func-node /))
+              (f9 (cgraph-new-func-node -)))
+          (cgraph-connect! f2 `(,n1 ,n5) `(,n3))
+          (cgraph-connect! f4 `(,n1 ,n8) `(,n5))
+          (cgraph-connect! f7 `(,n5 ,n6) `(,n8))
+          (cgraph-connect! f9 `(,n6)     `(,n3))
+
+          (cgraph-update! `((,n1 . 2) (,n8 . 3)))
+
+          (test* "n3" 8 (cvar-value (cgraph-var-node-cvar n3)))
+          (test* "n5" 6 (cvar-value (cgraph-var-node-cvar n5)))
+        )))
 
 (test-end :exit-on-failure #t)

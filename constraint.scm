@@ -5,6 +5,7 @@
 (use srfi-11)
 
 (use gauche.record)
+(use util.queue)
 
 (define-record-type cvar #t #t
   (value)
@@ -32,7 +33,8 @@
                       (cvar-defined?-set! cvar #t))
                     (map cgraph-var-node-cvar
                          (cgraph-func-node-outputs cfunc-node)) vars)
-        ))))
+        )
+      vars)))
 
 ;; cfunc [cvar] => [value] or #f
 (define (cfunc-apply cfunc inputs)
@@ -53,15 +55,49 @@
 (define (cgraph-connect! cfunc-node inputs outputs)
   (for-each (lambda (node)
               (cgraph-var-node-outputs-set! node (cons cfunc-node
-                                                       cgraph-var-node-outputs-set!)))
+                                                       (cgraph-var-node-outputs node))))
             inputs)
   (cgraph-func-node-inputs-set! cfunc-node inputs)
   (cgraph-func-node-outputs-set! cfunc-node outputs))
 
-(define (cgraph-update-vars! node-value-pairs)
+(define (cgraph-set-cvars! node-value-pairs)
   (for-each (lambda (pair)
               (let1 cvar (cgraph-var-node-cvar (car pair))
                 (cvar-value-set! cvar (cdr pair))
                 (cvar-defined?-set! cvar #t))
               node-value-pairs)
             node-value-pairs))
+
+;; Graph
+(define (cgraph-update! node-value-pairs)
+  (define queue (make-queue))
+  (define visited ())
+  (define (visit! n)
+    (enqueue! queue n)
+    (cgraph-var-node-visited?-set! n #t)
+    (set! visited (cons n visited)))
+  (define visited? cgraph-var-node-visited?)
+
+  (cgraph-set-cvars! node-value-pairs)
+
+  (for-each visit! (map car node-value-pairs))
+  (let loop ()
+    (unless (queue-empty? queue)
+      (let ((v (dequeue! queue))
+            (targets ()))
+
+        ;; for-each func in v.outputs
+        ;;   ret = (cgraph-func-node-update! func)
+        ;;   if ret != #f then
+        ;;     targets <- targets || func.outputs
+        (for-each (lambda (func-node)
+                    (when (cgraph-func-node-update! func-node)
+                      (set! targets (append targets (cgraph-func-node-outputs func-node)))))
+                  (cgraph-var-node-outputs v))
+
+        (for-each (^d
+                   (unless (visited? d)
+                     (visit! d)))
+                  targets)
+        (loop))))
+  )

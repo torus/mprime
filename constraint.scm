@@ -32,7 +32,8 @@
                       (cvar-value-set! cvar val)
                       (cvar-defined?-set! cvar #t))
                     (map cgraph-var-node-cvar
-                         (cgraph-func-node-outputs cfunc-node)) vars)
+                         (filter (^n (not (cgraph-var-node-visited? n)))
+                                 (cgraph-func-node-outputs cfunc-node))) vars)
         )
       vars)))
 
@@ -83,21 +84,20 @@
   (for-each visit! (map car node-value-pairs))
   (let loop ()
     (unless (queue-empty? queue)
-      (let ((v (dequeue! queue))
+      (let ((node (dequeue! queue))
             (targets ()))
 
-        ;; for-each func in v.outputs
-        ;;   ret = (cgraph-func-node-update! func)
-        ;;   if ret != #f then
-        ;;     targets <- targets || func.outputs
         (for-each (lambda (func-node)
                     (when (cgraph-func-node-update! func-node)
                       (set! targets (append targets (cgraph-func-node-outputs func-node)))))
-                  (cgraph-var-node-outputs v))
+                  (cgraph-var-node-outputs node))
 
-        (for-each (^d
-                   (unless (visited? d)
-                     (visit! d)))
+        (for-each (^(node)
+                   (unless (visited? node)
+                     (visit! node)))
                   targets)
         (loop))))
+
+  ;; Clean up visited? flags
+  (for-each (cut cgraph-var-node-visited?-set! <> #f) visited)
   )

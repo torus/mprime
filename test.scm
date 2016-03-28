@@ -109,6 +109,11 @@
           (test* "25C in Fahrenheit" 77 (cvar-value (cgraph-var-node-cvar nF)))
           )))
 
+(define (debug-proc name op)
+  (lambda args
+    ;; (print `(,name ,@args))
+    (apply op args)))
+
 (desc "Graph"
       (lambda ()
         (let ((n1 (cgraph-new-var-node))
@@ -116,19 +121,32 @@
               (n5 (cgraph-new-var-node))
               (n6 (cgraph-new-var-node))
               (n8 (cgraph-new-var-node))
-              (f2 (cgraph-new-func-node +))
-              (f4 (cgraph-new-func-node *))
-              (f7 (cgraph-new-func-node /))
-              (f9 (cgraph-new-func-node -)))
+              (f2 (cgraph-new-func-node (debug-proc "+" +)))
+              (f4 (cgraph-new-func-node (debug-proc "*" *)))
+              (f7 (cgraph-new-func-node (debug-proc "/" /)))
+              (f9 (cgraph-new-func-node (debug-proc "-" -))))
           (cgraph-connect! f2 `(,n1 ,n5) `(,n3))
           (cgraph-connect! f4 `(,n1 ,n8) `(,n5))
           (cgraph-connect! f7 `(,n5 ,n6) `(,n8))
           (cgraph-connect! f9 `(,n6)     `(,n3))
 
           (cgraph-update! `((,n1 . 2) (,n8 . 3)))
+          ;; (print (map (^n (cvar-value (cgraph-var-node-cvar n))) (list n1 n3 n5 n6 n8)))
+          ;; (print (map (^n (cvar-defined? (cgraph-var-node-cvar n))) (list n1 n3 n5 n6 n8)))
 
+          (test* "n1" 2 (cvar-value (cgraph-var-node-cvar n1)))
           (test* "n3" 8 (cvar-value (cgraph-var-node-cvar n3)))
           (test* "n5" 6 (cvar-value (cgraph-var-node-cvar n5)))
+          (test* "n8" 3 (cvar-value (cgraph-var-node-cvar n8)))
+
+          (cgraph-update! `((,n6 . 3)))
+          ;; (print (map (^n (cvar-value (cgraph-var-node-cvar n))) (list n1 n3 n5 n6 n8)))
+          ;; (print (map (^n (cvar-defined? (cgraph-var-node-cvar n))) (list n1 n3 n5 n6 n8)))
+
+          (test* "n3" -3 (cvar-value (cgraph-var-node-cvar n3)))
+          (test* "n5" 4 (cvar-value (cgraph-var-node-cvar n5)))
+          (test* "n6" 3 (cvar-value (cgraph-var-node-cvar n6)))
+          (test* "n8" 2 (cvar-value (cgraph-var-node-cvar n8)))
         )))
 
 (test-end :exit-on-failure #t)

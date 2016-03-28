@@ -72,4 +72,30 @@
           (cvar-value (cgraph-var-node-cvar n3))
           )))
 
+(test "Fahrenheit-Celsius example from SICP" 100
+      (lambda ()
+        (let ((nC (cgraph-new-var-node))
+              (nu (cgraph-new-var-node))
+              (nv (cgraph-new-var-node))
+              (nF (cgraph-new-var-node))
+              (n*9 (cgraph-new-func-node (cut * <> 9)))
+              (n/9 (cgraph-new-func-node (cut / <> 9)))
+              (n*5 (cgraph-new-func-node (cut * <> 5)))
+              (n/5 (cgraph-new-func-node (cut / <> 5)))
+              (n+32 (cgraph-new-func-node (cut + <> 32)))
+              (n-32 (cgraph-new-func-node (cut - <> 32))))
+          (cgraph-connect! n*9 `(,nC) `(,nu))
+          (cgraph-connect! n/9 `(,nu) `(,nC))
+          (cgraph-connect! n/5 `(,nu) `(,nv))
+          (cgraph-connect! n*5 `(,nv) `(,nu))
+          (cgraph-connect! n+32 `(,nv) `(,nF))
+          (cgraph-connect! n-32 `(,nF) `(,nv))
+
+          (cgraph-update-vars! `((,nF . 212)))
+          (cgraph-func-node-update! n-32)
+          (cgraph-func-node-update! n*5)
+          (cgraph-func-node-update! n/9)
+
+          (cvar-value (cgraph-var-node-cvar nC)))))
+
 (test-end :exit-on-failure #t)

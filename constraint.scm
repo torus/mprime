@@ -47,10 +47,10 @@
 
 ;; Unitities
 
-(define (cgraph-new-var-node)
+(define (mecs-new-var)
   (make-mecs-var-node (make-mecs-var #f #f) #f ()))
 
-(define (cgraph-new-func-node proc)
+(define (mecs-new-func proc)
   (make-cgraph-func-node (make-cfunc proc) () ()))
 
 (define (cgraph-connect! cfunc-node inputs outputs)

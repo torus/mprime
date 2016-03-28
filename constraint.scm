@@ -11,7 +11,7 @@
   (value)
   (defined?))
 
-(define-record-type cgraph-var-node #t #t
+(define-record-type mecs-var-node #t #t
   var
   (visited?)
   (outputs))
@@ -24,15 +24,15 @@
 (define-record-type cfunc #t #t proc)
 
 (define (cgraph-func-node-update! cfunc-node)
-  (let ((inputs (map cgraph-var-node-var (cgraph-func-node-inputs cfunc-node)))
+  (let ((inputs (map mecs-var-node-var (cgraph-func-node-inputs cfunc-node)))
         (cfunc (cgraph-func-node-cfunc cfunc-node)))
     (let1 vars (cfunc-apply cfunc inputs)
       (when vars
         (for-each (^[mecs-var val]
                       (mecs-var-value-set! mecs-var val)
                       (mecs-var-defined?-set! mecs-var #t))
-                    (map cgraph-var-node-var
-                         (filter (^n (not (cgraph-var-node-visited? n)))
+                    (map mecs-var-node-var
+                         (filter (^n (not (mecs-var-node-visited? n)))
                                  (cgraph-func-node-outputs cfunc-node))) vars)
         )
       vars)))
@@ -48,22 +48,22 @@
 ;; Unitities
 
 (define (cgraph-new-var-node)
-  (make-cgraph-var-node (make-mecs-var #f #f) #f ()))
+  (make-mecs-var-node (make-mecs-var #f #f) #f ()))
 
 (define (cgraph-new-func-node proc)
   (make-cgraph-func-node (make-cfunc proc) () ()))
 
 (define (cgraph-connect! cfunc-node inputs outputs)
   (for-each (lambda (node)
-              (cgraph-var-node-outputs-set! node (cons cfunc-node
-                                                       (cgraph-var-node-outputs node))))
+              (mecs-var-node-outputs-set! node (cons cfunc-node
+                                                       (mecs-var-node-outputs node))))
             inputs)
   (cgraph-func-node-inputs-set! cfunc-node inputs)
   (cgraph-func-node-outputs-set! cfunc-node outputs))
 
 (define (cgraph-set-cvars! node-value-pairs)
   (for-each (lambda (pair)
-              (let1 var (cgraph-var-node-var (car pair))
+              (let1 var (mecs-var-node-var (car pair))
                 (mecs-var-value-set! var (cdr pair))
                 (mecs-var-defined?-set! var #t))
               node-value-pairs)
@@ -75,9 +75,9 @@
   (define visited ())
   (define (visit! n)
     (enqueue! queue n)
-    (cgraph-var-node-visited?-set! n #t)
+    (mecs-var-node-visited?-set! n #t)
     (set! visited (cons n visited)))
-  (define visited? cgraph-var-node-visited?)
+  (define visited? mecs-var-node-visited?)
 
   (cgraph-set-cvars! node-value-pairs)
 
@@ -90,7 +90,7 @@
         (for-each (lambda (func-node)
                     (when (cgraph-func-node-update! func-node)
                       (set! targets (append targets (cgraph-func-node-outputs func-node)))))
-                  (cgraph-var-node-outputs node))
+                  (mecs-var-node-outputs node))
 
         (for-each (^(node)
                    (unless (visited? node)
@@ -99,5 +99,5 @@
         (loop))))
 
   ;; Clean up visited? flags
-  (for-each (cut cgraph-var-node-visited?-set! <> #f) visited)
+  (for-each (cut mecs-var-node-visited?-set! <> #f) visited)
   )

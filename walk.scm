@@ -156,8 +156,8 @@
     (gl-end)
     ))
 
-(define *view-rotx* 90.0)
-(define *view-roty* 0.0)
+(define *view-rotx* 20.0)
+(define *view-roty* -30.0)
 (define *view-rotz* 0.0)
 (define *gear1* 0)
 (define *gear2* 0)
@@ -212,8 +212,6 @@
 (define (reshape width height)
   (set! *window-width* width)
   (set! *window-height* height)
-
-  (print `(reshape ,width ,height))
 
   (let1 h (/ height width)
     ;;*** OpenGL BEGIN ***
@@ -296,7 +294,6 @@
 
 ;; Mouse
 (define (mouse-fn button state x y)
-  (print `(click ,button ,state ,x ,y))
   (cond [(and (= button GLUT_LEFT_BUTTON) (= state GLUT_DOWN))
          (on-click x y)
          ]
@@ -309,7 +306,6 @@
   (* (/ a 180) 3.14159265358979))
 
 (define (on-click x y)
-  (print `(rot ,*view-rotx* ,*view-roty* ,*view-rotz*))
   (let ((s (vector4f x y 0 0))
         (c (vector4f 0 0 40 0))
         (o (vector4f 0 0 0 0))
@@ -317,7 +313,6 @@
                                     (dig2rad *view-roty*)
                                     (dig2rad *view-rotz*)
                                     'zyx)))
-    (print `(rot ,rot))
     (vector4f-sub! s (vector4f (/ *window-width* 2) (/ *window-height* 2) 0 0))
     (vector4f-div! s (/ *window-width* 2))
     (vector4f-set! s 1 (- (vector4f-ref s 1)))
@@ -325,22 +320,18 @@
     (vector4f-sub! s c)
     (let ((p (* rot #,(vector4f 1 0 0 0)))
           (q (* rot #,(vector4f 0 0 1 0))))
-      (print `(p ,p q ,q s ,s))
       (let1 mat (matrix4f (vector4f-ref p 0) (vector4f-ref p 1) (vector4f-ref p 2) 0
                           (vector4f-ref q 0) (vector4f-ref q 1) (vector4f-ref q 2) 0
                           (vector4f-ref s 0) (vector4f-ref s 1) (vector4f-ref s 2) 0
                           0 0 0 1)
-        (print mat)
         (matrix4f-inverse! mat)
-        (print mat)
         (vector4f-sub! c o)
         (let1 solution (* mat c)
-          (print `(solution ,solution))
           (set! draw-cursor
                 (lambda ()
                   (gl-push-matrix)
-                  (gl-translate (ref solution 0) -0.5 (ref solution 1))
-                  (glut-solid-cube 1.5)
+                  (gl-translate (ref solution 0) 0.2 (ref solution 1))
+                  (glut-solid-cube 0.2)
                   (gl-pop-matrix)))
         )
         ))))

@@ -319,7 +319,7 @@
                                     'zyx)))
     (print `(rot ,rot))
     (vector4f-sub! s (vector4f (/ *window-width* 2) (/ *window-height* 2) 0 0))
-    (vector4f-div! s *window-width*)
+    (vector4f-div! s (/ *window-width* 2))
     (vector4f-set! s 1 (- (vector4f-ref s 1)))
     (vector4f-add! s (vector4f 0 0 (- 40 5)))
     (vector4f-sub! s c)

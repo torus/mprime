@@ -330,7 +330,7 @@
           (set! draw-cursor
                 (lambda ()
                   (gl-push-matrix)
-                  (gl-translate (ref solution 0) 0.2 (ref solution 1))
+                  (gl-translate (ref solution 0) 0.1 (ref solution 1))
                   (glut-solid-cube 0.2)
                   (gl-pop-matrix)))
         )

@@ -4,6 +4,11 @@
 (use gl)
 (use gl.glut)
 
+(use util.queue)
+
+(use gauche.record)
+(load "./constraint")
+
 (define *view-rotx* 20.0)
 (define *view-roty* -30.0)
 (define *view-rotz* 0.0)
@@ -12,28 +17,29 @@
 (define *frames* 0)
 (define *t0*	 0)
 
-(define (draw)
-  ;;*** OpenGL BEGIN ***
-  (gl-clear (logior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
-  (begin
-    (gl-push-matrix)
-    (gl-rotate *view-rotx* 1.0 0.0 0.0)
-    (gl-rotate *view-roty* 0.0 1.0 0.0)
-    (gl-rotate *view-rotz* 0.0 0.0 1.0)
+(define (draw state)
+  (lambda ()
+    ;;*** OpenGL BEGIN ***
+    (gl-clear (logior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
+    (begin
+      (gl-push-matrix)
+      (gl-rotate *view-rotx* 1.0 0.0 0.0)
+      (gl-rotate *view-roty* 0.0 1.0 0.0)
+      (gl-rotate *view-rotz* 0.0 0.0 1.0)
 
-    (draw-world (glut-get GLUT_ELAPSED_TIME))
-    (gl-pop-matrix))
+      (draw-world state (glut-get GLUT_ELAPSED_TIME))
+      (gl-pop-matrix))
 
-  (glut-swap-buffers)
+    (glut-swap-buffers)
 
-  (inc! *frames*)
+    (inc! *frames*)
 
-  (let1 t (glut-get GLUT_ELAPSED_TIME)
-    (when (>= (- t *t0*) 5000)
-      (let1 seconds (/ (- t *t0*) 1000.0)
-        (print #`",*frames* in ,seconds seconds = ,(/ *frames* seconds) FPS")
-        (set! *t0*	   t)
-        (set! *frames* 0)))))
+    (let1 t (glut-get GLUT_ELAPSED_TIME)
+      (when (>= (- t *t0*) 5000)
+        (let1 seconds (/ (- t *t0*) 1000.0)
+          (print #`",*frames* in ,seconds seconds = ,(/ *frames* seconds) FPS")
+          (set! *t0*	   t)
+          (set! *frames* 0))))))
 
 ;; new window size or exposure
 (define (reshape width height)
@@ -112,6 +118,11 @@
 
 (define (dig2rad a) (/ a 180/pi))
 
+(define *click-queue* (make-queue))
+
+(define (for-each-in-queue proc queue)
+  (every-in-queue (lambda (e) (proc e) #t) queue))
+
 (define (on-click x y)
   (let ((s (vector4f x y 0 0))
         (c (vector4f 0 0 40 0))
@@ -134,14 +145,24 @@
         (matrix4f-inverse! mat)
         (vector4f-sub! c o)
         (let1 solution (* mat c)
-          (set! draw-cursor
-                (lambda ()
-                  (gl-push-matrix)
-                  (gl-translate (ref solution 0) 0.1 (ref solution 1))
-                  (glut-solid-cube 0.2)
-                  (gl-pop-matrix)))
-        )
-        ))))
+          (let ((x (ref solution 0))
+                (z (ref solution 1)))
+            (enqueue! *click-queue* (point4f x 0 z 0))
+            (set! draw-cursor
+                  (lambda ()
+                    (for-each-in-queue draw-marker *click-queue*)
+                    ))
+            ))))))
+
+(define (draw-marker point)
+  (let ((x (ref point 0))
+        (y (ref point 1))
+        (z (ref point 2)))
+    (gl-push-matrix)
+    (gl-translate x (+ y 0.1) z)
+    (glut-solid-cube 0.2)
+    (gl-pop-matrix)
+    ))
 
 (define (visible vis)
   (if (= vis GLUT_VISIBLE)
@@ -150,6 +171,22 @@
 
 (define *window-width* 800)
 (define *window-height* 600)
+
+(define-record-type state %make-state #t
+  (elapsed)
+  (cube-pos))
+
+(define (make-state)
+  (let ((elapsed (mecs-new-var))
+        (cube-pos (mecs-new-var))
+        (circle (mecs-new-func
+                 (lambda (e)
+                   (let1 seconds (/ e 1000)
+                     (point4f (* 3 (cos seconds)) 0.15 (* 3 (sin seconds))))))))
+
+    (mecs-connect! circle `(,elapsed) `(,cube-pos))
+
+    (%make-state elapsed cube-pos)))
 
 (define (main args)
   (glut-init args)
@@ -161,7 +198,7 @@
   (glut-create-window "Gears")
   (init)
 
-  (glut-display-func	draw)
+  (glut-display-func	(draw (make-state)))
   (glut-reshape-func	reshape)
   (glut-keyboard-func	key)
   (glut-special-func	special)
@@ -174,7 +211,9 @@
 
 ;;;;;;;;;;;;;;;;;;
 
-(define (draw-world elapsed)
+(define (draw-world state elapsed)
+  (mecs-update! `((,(state-elapsed state) . ,elapsed)))
+
   (gl-push-matrix)
     (gl-translate 0 -0.5 0)
     (gl-scale 10 1 10)
@@ -183,8 +222,8 @@
   (gl-pop-matrix)
 
   (gl-push-matrix)
-  (let ((seconds (/ elapsed 1000)))
-    (gl-translate (* 3 (cos seconds)) 0.15 (* 3 (sin seconds)))
+  (let ((pos (mecs-var-value (mecs-var-node-var (state-cube-pos state)))))
+    (gl-translate (ref pos 0) (ref pos 1) (ref pos 2))
     (gl-material GL_FRONT GL_AMBIENT_AND_DIFFUSE '#f32(0.8 0.1 0.0 1.0))
     (glut-solid-cube 0.3)
     )

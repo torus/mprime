@@ -150,6 +150,7 @@
             (enqueue! *click-queue* (point4f x 0 z 0))
             (set! draw-cursor
                   (lambda ()
+                    (gl-material GL_FRONT GL_AMBIENT_AND_DIFFUSE '#f32(0.8 0.1 0.0 1.0))
                     (for-each-in-queue draw-marker *click-queue*)
                     ))
             ))))))
@@ -174,19 +175,40 @@
 
 (define-record-type state %make-state #t
   (elapsed)
-  (cube-pos))
+  (cube-pos)
+
+  (start-pos)
+  (end-pos)
+  (start-time)
+  (current-pos))
 
 (define (make-state)
   (let ((elapsed (mecs-new-var))
         (cube-pos (mecs-new-var))
+
+        (start-pos (mecs-new-var))
+        (end-pos (mecs-new-var))
+        (start-time (mecs-new-var))
+        (current-pos (mecs-new-var))
+
         (circle (mecs-new-func
                  (lambda (e)
                    (let1 seconds (/ e 1000)
-                     (point4f (* 3 (cos seconds)) 0.15 (* 3 (sin seconds))))))))
+                     (point4f (* 3 (cos seconds)) 0.15 (* 3 (sin seconds)))))))
+
+        (liner (mecs-new-func
+                (lambda (start-pos end-pos start-time elapsed)
+                  (let ((new-pos (+ start-pos
+                                    (* (- end-pos start-pos)
+                                       #?=(min 1 (/ (- elapsed start-time) 1000))))))
+                    new-pos
+                    ))))
+        )
 
     (mecs-connect! circle `(,elapsed) `(,cube-pos))
+    (mecs-connect! liner `(,start-pos ,end-pos ,start-time ,elapsed) `(,current-pos))
 
-    (%make-state elapsed cube-pos)))
+    (%make-state elapsed cube-pos start-pos end-pos start-time current-pos)))
 
 (define (main args)
   (glut-init args)
@@ -212,7 +234,22 @@
 ;;;;;;;;;;;;;;;;;;
 
 (define (draw-world state elapsed)
-  (mecs-update! `((,(state-elapsed state) . ,elapsed)))
+  (define (add-start-pos alist)
+    (if (and (not (mecs-var-defined? (mecs-var-node-var (state-start-pos state))))
+              (not (queue-empty? *click-queue*)))
+        (append `((,(state-start-pos state) . ,(dequeue! *click-queue*))
+                  (,(state-start-time state) . ,elapsed))
+                alist)
+         alist))
+
+  (define (add-end-pos alist)
+    (if (not (queue-empty? *click-queue*))
+        (cons `(,(state-end-pos state) . ,(queue-front *click-queue*)) alist)
+        alist))
+
+  (let1 alist `((,(state-elapsed state) . ,elapsed))
+    (mecs-update! (add-end-pos
+                   (add-start-pos alist))))
 
   (gl-push-matrix)
     (gl-translate 0 -0.5 0)
@@ -228,6 +265,16 @@
     (glut-solid-cube 0.3)
     )
   (gl-pop-matrix)
+
+  (when (mecs-var-defined? (mecs-var-node-var (state-current-pos state)))
+    (gl-push-matrix)
+    (let ((pos (mecs-var-value (mecs-var-node-var (state-current-pos state)))))
+      (gl-translate (ref pos 0) (ref pos 1) (ref pos 2))
+      (gl-material GL_FRONT GL_AMBIENT_AND_DIFFUSE '#f32(0.2 0.4 0.9 1.0))
+      (glut-solid-cube 0.3)
+      )
+    (gl-pop-matrix)
+    )
 
   (draw-cursor)
   )

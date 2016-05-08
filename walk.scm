@@ -200,7 +200,7 @@
                 (lambda (start-pos end-pos start-time elapsed)
                   (let ((new-pos (+ start-pos
                                     (* (- end-pos start-pos)
-                                       #?=(min 1 (/ (- elapsed start-time) 1000))))))
+                                       (min 1 (/ (- elapsed start-time) 1000))))))
                     new-pos
                     ))))
         )
@@ -233,18 +233,28 @@
 
 ;;;;;;;;;;;;;;;;;;
 
+(define *prev-front* #f)
+
 (define (draw-world state elapsed)
   (define (add-start-pos alist)
-    (if (and (not (mecs-var-defined? (mecs-var-node-var (state-start-pos state))))
-              (not (queue-empty? *click-queue*)))
-        (append `((,(state-start-pos state) . ,(dequeue! *click-queue*))
-                  (,(state-start-time state) . ,elapsed))
+    (if (and (or (not (mecs-var-defined? (mecs-var-node-var (state-start-pos state))))
+                 (and (mecs-var-defined? (mecs-var-node-var (state-start-time state)))
+                      (> elapsed
+                         (+ (mecs-var-value (mecs-var-node-var (state-start-time state)))
+                            1000))))
+             (not (queue-empty? *click-queue*)))
+        #?=(append `((,(state-start-pos state) . ,(dequeue! *click-queue*))
+                  )
                 alist)
          alist))
 
   (define (add-end-pos alist)
-    (if (not (queue-empty? *click-queue*))
-        (cons `(,(state-end-pos state) . ,(queue-front *click-queue*)) alist)
+    (if (and (not (queue-empty? *click-queue*))
+             (not (eq? *prev-front* (queue-front *click-queue*))))
+        (begin
+          (set! *prev-front* (queue-front *click-queue*))
+          (append `((,(state-end-pos state) . ,*prev-front*)
+                    (,(state-start-time state) . ,elapsed)) alist))
         alist))
 
   (let1 alist `((,(state-elapsed state) . ,elapsed))

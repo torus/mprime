@@ -38,10 +38,12 @@
 ;; mecs-func [mecs-var] => [value] or #f
 (define (mecs-func-apply cfunc inputs)
   (if (every (cut eq? #t <>) (map mecs-var-defined? inputs))
-      (let-values ((vars (apply (mecs-func-proc cfunc) (map mecs-var-value inputs))))
-        vars)
+      (guard (exc
+              [(mecs-skip-calculation? exc)
+               #f])
+        (let-values ((vars (apply (mecs-func-proc cfunc) (map mecs-var-value inputs))))
+          vars))
       #f))
-
 
 ;; Unitities
 
@@ -66,6 +68,10 @@
                 (mecs-var-defined?-set! var #t))
               node-value-pairs)
             node-value-pairs))
+
+(define-condition-type <mecs-skip-calculation> <condition>
+  mecs-skip-calculation?
+  )
 
 ;; Graph
 (define (mecs-update! node-value-pairs)

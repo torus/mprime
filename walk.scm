@@ -174,15 +174,18 @@
 (define *window-height* 600)
 
 (define-record-type state %make-state #t
+  queue
   (elapsed)
   (cube-pos)
 
   (start-pos)
   (end-pos)
   (start-time)
-  (current-pos))
+  (current-pos)
 
-(define (make-state)
+  (active?))
+
+(define (make-state click-queue)
   (let ((elapsed (mecs-new-var))
         (cube-pos (mecs-new-var))
 
@@ -191,24 +194,52 @@
         (start-time (mecs-new-var))
         (current-pos (mecs-new-var))
 
+        (active? (mecs-new-var))
+
         (circle (mecs-new-func
                  (lambda (e)
                    (let1 seconds (/ e 1000)
                      (point4f (* 3 (cos seconds)) 0.15 (* 3 (sin seconds)))))))
 
         (liner (mecs-new-func
-                (lambda (start-pos end-pos start-time elapsed)
+                (lambda (active? start-pos end-pos start-time elapsed)
+                  (unless active? (raise (condition (<mecs-skip-calculation>))))
                   (let ((new-pos (+ start-pos
                                     (* (- end-pos start-pos)
                                        (min 1 (/ (- elapsed start-time) 1000))))))
-                    new-pos
-                    ))))
+                    new-pos)
+                  )))
+
+        (activate (mecs-new-func
+                   (lambda (elapsed start-time)
+                     (< (- elapsed start-time) 1)
+                     )))
+
+        (update-start-pos
+         (mecs-new-func (lambda (active? end-pos)
+                          (when active? (raise (condition (<mecs-skip-calculation>))))
+                          end-pos)))
+
+        (update-end-pos
+         (mecs-new-func (lambda (start-pos elapsed)
+                          (when (queue-empty? click-queue)
+                            (raise (condition (<mecs-skip-calculation>))))
+                          (values (dequeue! click-queue) elapsed)
+                          )))
+
         )
 
     (mecs-connect! circle `(,elapsed) `(,cube-pos))
-    (mecs-connect! liner `(,start-pos ,end-pos ,start-time ,elapsed) `(,current-pos))
+    (mecs-connect! liner `(,active? ,start-pos ,end-pos ,start-time ,elapsed)
+                   `(,current-pos))
+    (mecs-connect! activate `(,elapsed ,start-time) `(,active?))
+    (mecs-connect! update-start-pos `(,active? ,end-pos) `(,start-pos))
+    (mecs-connect! update-end-pos `(,start-pos ,elapsed) `(,end-pos ,start-time))
 
-    (%make-state elapsed cube-pos start-pos end-pos start-time current-pos)))
+    (%make-state click-queue
+                 elapsed cube-pos
+                 start-pos end-pos start-time current-pos
+                 active?)))
 
 (define (main args)
   (glut-init args)
@@ -220,7 +251,7 @@
   (glut-create-window "Gears")
   (init)
 
-  (glut-display-func	(draw (make-state)))
+  (glut-display-func	(draw (make-state *click-queue*)))
   (glut-reshape-func	reshape)
   (glut-keyboard-func	key)
   (glut-special-func	special)
@@ -236,7 +267,7 @@
 (define *prev-front* #f)
 
 (define (draw-world state elapsed)
-  (define (add-start-pos alist)
+  #;(define (add-start-pos alist)
     (if (and (or (not (mecs-var-defined? (mecs-var-node-var (state-start-pos state))))
                  (and (mecs-var-defined? (mecs-var-node-var (state-start-time state)))
                       (> elapsed
@@ -248,18 +279,20 @@
                 alist)
          alist))
 
-  (define (add-end-pos alist)
+  #;(define (add-end-pos alist)
     (if (and (not (queue-empty? *click-queue*))
              (not (eq? *prev-front* (queue-front *click-queue*))))
         (begin
-          (set! *prev-front* (queue-front *click-queue*))
+          (set! *prev-front* #?=(queue-front *click-queue*))
           (append `((,(state-end-pos state) . ,*prev-front*)
                     (,(state-start-time state) . ,elapsed)) alist))
         alist))
 
-  (let1 alist `((,(state-elapsed state) . ,elapsed))
+  #;(let1 alist `((,(state-elapsed state) . ,elapsed))
     (mecs-update! (add-end-pos
-                   (add-start-pos alist))))
+  (add-start-pos alist))))
+
+  (mecs-update! `((,(state-elapsed state) . ,elapsed)))
 
   (gl-push-matrix)
     (gl-translate 0 -0.5 0)

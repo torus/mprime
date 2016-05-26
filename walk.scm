@@ -18,6 +18,7 @@
 (define *t0*	 0)
 
 (define (draw state)
+  (initialize-state state)
   (lambda ()
     ;;*** OpenGL BEGIN ***
     (gl-clear (logior GL_COLOR_BUFFER_BIT GL_DEPTH_BUFFER_BIT))
@@ -218,13 +219,13 @@
         (update-start-pos
          (mecs-new-func (lambda (active? end-pos)
                           (when active? (raise (condition (<mecs-skip-calculation>))))
-                          end-pos)))
+                          #?=end-pos)))
 
         (update-end-pos
          (mecs-new-func (lambda (start-pos elapsed)
                           (when (queue-empty? click-queue)
                             (raise (condition (<mecs-skip-calculation>))))
-                          (values (dequeue! click-queue) elapsed)
+                          (values #?=(dequeue! click-queue) elapsed)
                           )))
 
         )
@@ -266,32 +267,10 @@
 
 (define *prev-front* #f)
 
+(define (initialize-state state)
+  (mecs-update! `((,(state-active? state) . #t))))
+
 (define (draw-world state elapsed)
-  #;(define (add-start-pos alist)
-    (if (and (or (not (mecs-var-defined? (mecs-var-node-var (state-start-pos state))))
-                 (and (mecs-var-defined? (mecs-var-node-var (state-start-time state)))
-                      (> elapsed
-                         (+ (mecs-var-value (mecs-var-node-var (state-start-time state)))
-                            1000))))
-             (not (queue-empty? *click-queue*)))
-        #?=(append `((,(state-start-pos state) . ,(dequeue! *click-queue*))
-                  )
-                alist)
-         alist))
-
-  #;(define (add-end-pos alist)
-    (if (and (not (queue-empty? *click-queue*))
-             (not (eq? *prev-front* (queue-front *click-queue*))))
-        (begin
-          (set! *prev-front* #?=(queue-front *click-queue*))
-          (append `((,(state-end-pos state) . ,*prev-front*)
-                    (,(state-start-time state) . ,elapsed)) alist))
-        alist))
-
-  #;(let1 alist `((,(state-elapsed state) . ,elapsed))
-    (mecs-update! (add-end-pos
-  (add-start-pos alist))))
-
   (mecs-update! `((,(state-elapsed state) . ,elapsed)))
 
   (gl-push-matrix)

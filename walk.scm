@@ -276,7 +276,10 @@
 (define *prev-front* #f)
 
 (define (initialize-state state)
-  (mecs-update! `((,(state-active? state) . #t))))
+  (mecs-update! `((,(state-active? state) . #t)
+		  (,(state-start-pos state) . #f)
+		  (,(state-end-pos state) . #f)
+		  )))
 
 (define (draw-world state elapsed)
   (mecs-update! `((,(state-elapsed state) . ,elapsed)))
@@ -307,5 +310,7 @@
     )
 
   (draw-cursor)
+
+  (sys-nanosleep 100000000)
   )
 

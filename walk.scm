@@ -199,39 +199,47 @@
 
         (circle (mecs-new-func
                  (lambda (e)
+		   #;(print #`"circle ,e")
                    (let1 seconds (/ e 1000)
                      (point4f (* 3 (cos seconds)) 0.15 (* 3 (sin seconds)))))))
 
-        (liner (mecs-new-func
+        (linear (mecs-new-func
                 (lambda (active? start-pos end-pos start-time elapsed)
-                  (unless active? (raise (condition (<mecs-skip-calculation>))))
+		  (print #`"linear ,active? ,start-pos ,end-pos ,start-time ,elapsed")
+                  (unless (and active? start-pos end-pos) (raise (condition (<mecs-skip-calculation>))))
                   (let ((new-pos (+ start-pos
                                     (* (- end-pos start-pos)
                                        (min 1 (/ (- elapsed start-time) 1000))))))
+		    (print #`"linear -> ,new-pos")
                     new-pos)
                   )))
 
         (activate (mecs-new-func
                    (lambda (elapsed start-time)
-                     (< (- elapsed start-time) 1)
+		     (print #`"activate ,elapsed ,start-time")
+                     (< (- elapsed start-time) 1000)
                      )))
 
         (update-start-pos
          (mecs-new-func (lambda (active? end-pos)
-                          (when active? (raise (condition (<mecs-skip-calculation>))))
-                          #?=end-pos)))
+			  (print #`"update-start-pos ,active? ,end-pos")
+                          (when (or active? (not end-pos)) (raise (condition (<mecs-skip-calculation>))))
+			  (print #`"update-start-pos -> ,end-pos")
+                          end-pos)))
 
         (update-end-pos
          (mecs-new-func (lambda (start-pos elapsed)
+			  (print #`"update-end-pos ,start-pos ,elapsed")
                           (when (queue-empty? click-queue)
                             (raise (condition (<mecs-skip-calculation>))))
-                          (values #?=(dequeue! click-queue) elapsed)
+			  (print #`"update-end-pos -> ,elapsed")
+                          (values (dequeue! click-queue) elapsed)
                           )))
 
         )
 
     (mecs-connect! circle `(,elapsed) `(,cube-pos))
-    (mecs-connect! liner `(,active? ,start-pos ,end-pos ,start-time ,elapsed)
+    (mecs-connect! linear `(,active? ,start-pos ,end-pos ,start-time ,elapsed)
                    `(,current-pos))
     (mecs-connect! activate `(,elapsed ,start-time) `(,active?))
     (mecs-connect! update-start-pos `(,active? ,end-pos) `(,start-pos))

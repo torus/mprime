@@ -17,7 +17,7 @@
 (define *frames* 0)
 (define *t0*	 0)
 
-(define (draw state)
+(define (draw state click-queue)
   (initialize-state state)
   (lambda ()
     ;;*** OpenGL BEGIN ***
@@ -28,7 +28,7 @@
       (gl-rotate *view-roty* 0.0 1.0 0.0)
       (gl-rotate *view-rotz* 0.0 0.0 1.0)
 
-      (draw-world state (glut-get GLUT_ELAPSED_TIME))
+      (draw-world state (glut-get GLUT_ELAPSED_TIME) click-queue)
       (gl-pop-matrix))
 
     (glut-swap-buffers)
@@ -175,7 +175,6 @@
 (define *window-height* 600)
 
 (define-record-type state %make-state #t
-  queue
   (elapsed)
   (cube-pos)
 
@@ -186,7 +185,7 @@
 
   (active?))
 
-(define (make-state click-queue)
+(define (make-state)
   (let ((elapsed (mecs-new-var))
         (cube-pos (mecs-new-var))
 
@@ -219,34 +218,14 @@
 		     (print #`"activate ,elapsed ,start-time")
                      (< (- elapsed start-time) 1000)
                      )))
-
-        (update-start-pos
-         (mecs-new-func (lambda (active? end-pos)
-			  (print #`"update-start-pos ,active? ,end-pos")
-                          (when (or active? (not end-pos)) (raise (condition (<mecs-skip-calculation>))))
-			  (print #`"update-start-pos -> ,end-pos")
-                          end-pos)))
-
-        (update-end-pos
-         (mecs-new-func (lambda (start-pos elapsed)
-			  (print #`"update-end-pos ,start-pos ,elapsed")
-                          (when (queue-empty? click-queue)
-                            (raise (condition (<mecs-skip-calculation>))))
-			  (print #`"update-end-pos -> ,elapsed")
-                          (values (dequeue! click-queue) elapsed)
-                          )))
-
         )
 
     (mecs-connect! circle `(,elapsed) `(,cube-pos))
     (mecs-connect! linear `(,active? ,start-pos ,end-pos ,start-time ,elapsed)
                    `(,current-pos))
     (mecs-connect! activate `(,elapsed ,start-time) `(,active?))
-    (mecs-connect! update-start-pos `(,active? ,end-pos) `(,start-pos))
-    (mecs-connect! update-end-pos `(,start-pos ,elapsed) `(,end-pos ,start-time))
 
-    (%make-state click-queue
-                 elapsed cube-pos
+    (%make-state elapsed cube-pos
                  start-pos end-pos start-time current-pos
                  active?)))
 
@@ -260,7 +239,7 @@
   (glut-create-window "Gears")
   (init)
 
-  (glut-display-func	(draw (make-state *click-queue*)))
+  (glut-display-func	(draw (make-state) *click-queue*))
   (glut-reshape-func	reshape)
   (glut-keyboard-func	key)
   (glut-special-func	special)
@@ -277,12 +256,30 @@
 
 (define (initialize-state state)
   (mecs-update! `((,(state-active? state) . #t)
-		  (,(state-start-pos state) . #f)
-		  (,(state-end-pos state) . #f)
+		  ;; (,(state-start-pos state) . #f)
+		  ;; (,(state-end-pos state) . #f)
 		  )))
 
-(define (draw-world state elapsed)
-  (mecs-update! `((,(state-elapsed state) . ,elapsed)))
+(define (draw-world state elapsed click-queue)
+  (define update-list `((,(state-elapsed state) . ,elapsed)))
+
+  (if (mecs-var-defined? (mecs-var-node-var (state-start-pos state)))
+      (unless (mecs-var-defined? (mecs-var-node-var (state-end-pos state)))
+              (unless (queue-empty? click-queue)
+                      (set! update-list (cons
+                                         (cons (state-end-pos state) (dequeue! click-queue))
+                                         update-list))
+                      (set! update-list (cons
+                                         (cons (state-start-time state) elapsed)
+                                         update-list))
+                      ))
+      (unless (queue-empty? click-queue)
+              (set! update-list (cons
+                                 (cons (state-start-pos state) (dequeue! click-queue))
+                                 update-list))
+              ))
+
+  (mecs-update! update-list)
 
   (gl-push-matrix)
     (gl-translate 0 -0.5 0)

@@ -263,17 +263,24 @@
 (define (draw-world state elapsed click-queue)
   (define update-list `((,(state-elapsed state) . ,elapsed)))
 
-  ;; Initial
   (unless (queue-empty? click-queue)
           (if (mecs-var-defined? (mecs-var-node-var (state-start-pos state)))
               (if (mecs-var-defined? (mecs-var-node-var (state-end-pos state)))
-                  #f
+                  (unless (mecs-var-value (mecs-var-node-var (state-active? state)))
+                          (let ((head (dequeue! click-queue))
+                                (start (mecs-var-value (mecs-var-node-var (state-end-pos state)))))
+                            (set! update-list
+                                  `((,(state-start-time state) . ,elapsed)
+                                    (,(state-start-pos state) . ,start)
+                                    (,(state-end-pos state) . ,head)
+                                    . ,update-list))))
                   (set! update-list
                         `((,(state-start-time state) . ,elapsed)
                           (,(state-end-pos state) . ,(dequeue! click-queue))
                           . ,update-list)))
               (set! update-list
-                    `((,(state-start-pos state) . ,(dequeue! click-queue)) . ,update-list))))
+                    `((,(state-start-pos state) . ,(dequeue! click-queue))
+                      . ,update-list))))
 
   (mecs-update! update-list)
 

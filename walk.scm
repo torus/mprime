@@ -268,9 +268,9 @@
           (if (mecs-var-defined? (mecs-var-node-var (state-start-pos state)))
               (unless (mecs-var-defined? (mecs-var-node-var (state-end-pos state)))
                       (set! update-list
-                            `((,(state-end-pos state) . ,(dequeue! click-queue)) . ,update-list))
-                      (set! update-list
-                            `((,(state-start-time state) . ,elapsed) . ,update-list)))
+                            `((,(state-start-time state) . ,elapsed)
+                              (,(state-end-pos state) . ,(dequeue! click-queue))
+                              . ,update-list)))
               (set! update-list
                     `((,(state-start-pos state) . ,(dequeue! click-queue)) . ,update-list))))
 

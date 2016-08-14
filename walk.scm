@@ -108,23 +108,24 @@
       (set! *view-roty* (fmod (- *view-roty* 5.0) 360)) (q)))))
 
 ;; Mouse
-(define (mouse-fn button state x y)
-  (cond [(and (= button GLUT_LEFT_BUTTON) (= state GLUT_DOWN))
-         (on-click x y)
-         ]
-        [else
-         ]))
+(define (mouse-fn click-queue)
+  (lambda (button state x y)
+    (cond [(and (= button GLUT_LEFT_BUTTON) (= state GLUT_DOWN))
+           (on-click click-queue x y)
+           ]
+          [else
+           ])))
 
 (define (draw-cursor))
 
 (define (dig2rad a) (/ a 180/pi))
 
-(define *click-queue* (make-queue))
+;; (define *click-queue* (make-queue))
 
 (define (for-each-in-queue proc queue)
   (every-in-queue (lambda (e) (proc e) #t) queue))
 
-(define (on-click x y)
+(define (on-click click-queue x y)
   (let ((s (vector4f x y 0 0))
         (c (vector4f 0 0 40 0))
         (o (vector4f 0 0 0 0))
@@ -148,11 +149,11 @@
         (let1 solution (* mat c)
           (let ((x (ref solution 0))
                 (z (ref solution 1)))
-            (enqueue! *click-queue* (point4f x 0 z 0))
+            (enqueue! click-queue (point4f x 0 z 0))
             (set! draw-cursor
                   (lambda ()
                     (gl-material GL_FRONT GL_AMBIENT_AND_DIFFUSE '#f32(0.8 0.1 0.0 1.0))
-                    (for-each-in-queue draw-marker *click-queue*)
+                    (for-each-in-queue draw-marker click-queue)
                     ))
             ))))))
 
@@ -230,6 +231,8 @@
                  active?)))
 
 (define (main args)
+  (define click-queue (make-queue))
+
   (glut-init args)
   (glut-init-display-mode (logior GLUT_DOUBLE GLUT_DEPTH GLUT_RGB))
 
@@ -239,13 +242,13 @@
   (glut-create-window "Gears")
   (init)
 
-  (glut-display-func	(draw (make-state) *click-queue*))
+  (glut-display-func	(draw (make-state) click-queue))
   (glut-reshape-func	reshape)
   (glut-keyboard-func	key)
   (glut-special-func	special)
   (glut-visibility-func visible)
 
-  (glut-mouse-func	mouse-fn)
+  (glut-mouse-func	(mouse-fn click-queue))
 
   (glut-main-loop)
   0)

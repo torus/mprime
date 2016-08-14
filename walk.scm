@@ -204,18 +204,18 @@
 
         (linear (mecs-new-func
                 (lambda (active? start-pos end-pos start-time elapsed)
-		  (print #`"linear ,active? ,start-pos ,end-pos ,start-time ,elapsed")
+		  #;(print #`"linear ,active? ,start-pos ,end-pos ,start-time ,elapsed")
                   (unless (and active? start-pos end-pos) (raise (condition (<mecs-skip-calculation>))))
                   (let ((new-pos (+ start-pos
                                     (* (- end-pos start-pos)
                                        (min 1 (/ (- elapsed start-time) 1000))))))
-		    (print #`"linear -> ,new-pos")
+		    #;(print #`"linear -> ,new-pos")
                     new-pos)
                   )))
 
         (activate (mecs-new-func
                    (lambda (elapsed start-time)
-		     (print #`"activate ,elapsed ,start-time")
+		     #;(print #`"activate ,elapsed ,start-time")
                      (< (- elapsed start-time) 1000)
                      )))
         )
@@ -311,6 +311,6 @@
 
   (draw-cursor)
 
-  (sys-nanosleep 100000000)
+  ;; (sys-nanosleep 100000000)
   )
 

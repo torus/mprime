@@ -182,6 +182,7 @@
   (start-pos)
   (end-pos)
   (start-time)
+  (end-time)
   (current-pos)
 
   (active?))
@@ -193,6 +194,7 @@
         (start-pos (mecs-new-var))
         (end-pos (mecs-new-var))
         (start-time (mecs-new-var))
+        (end-time (mecs-new-var))
         (current-pos (mecs-new-var))
 
         (active? (mecs-new-var))
@@ -204,30 +206,30 @@
                      (point4f (* 3 (cos seconds)) 0.15 (* 3 (sin seconds)))))))
 
         (linear (mecs-new-func
-                (lambda (active? start-pos end-pos start-time elapsed)
+                (lambda (active? start-pos end-pos start-time end-time elapsed)
 		  #;(print #`"linear ,active? ,start-pos ,end-pos ,start-time ,elapsed")
                   (unless (and active? start-pos end-pos) (raise (condition (<mecs-skip-calculation>))))
                   (let ((new-pos (+ start-pos
                                     (* (- end-pos start-pos)
-                                       (min 1 (/ (- elapsed start-time) 1000))))))
+                                       (min 1 (/ (- elapsed start-time) (- end-time start-time)))))))
 		    #;(print #`"linear -> ,new-pos")
                     new-pos)
                   )))
 
         (activate (mecs-new-func
-                   (lambda (elapsed start-time)
+                   (lambda (elapsed start-time end-time)
 		     #;(print #`"activate ,elapsed ,start-time")
-                     (< (- elapsed start-time) 1000)
+                     (< elapsed end-time)
                      )))
         )
 
     (mecs-connect! circle `(,elapsed) `(,cube-pos))
-    (mecs-connect! linear `(,active? ,start-pos ,end-pos ,start-time ,elapsed)
+    (mecs-connect! linear `(,active? ,start-pos ,end-pos ,start-time ,end-time ,elapsed)
                    `(,current-pos))
-    (mecs-connect! activate `(,elapsed ,start-time) `(,active?))
+    (mecs-connect! activate `(,elapsed ,start-time ,end-time) `(,active?))
 
     (%make-state elapsed cube-pos
-                 start-pos end-pos start-time current-pos
+                 start-pos end-pos start-time end-time current-pos
                  active?)))
 
 (define (main args)
@@ -274,11 +276,13 @@
                                 (start (mecs-var-value (mecs-var-node-var (state-end-pos state)))))
                             (set! update-list
                                   `((,(state-start-time state) . ,elapsed)
+                                    (,(state-end-time state) . ,(+ elapsed 1000))
                                     (,(state-start-pos state) . ,start)
                                     (,(state-end-pos state) . ,head)
                                     . ,update-list))))
                   (set! update-list
                         `((,(state-start-time state) . ,elapsed)
+                          (,(state-end-time state) . ,(+ elapsed 1000))
                           (,(state-end-pos state) . ,(dequeue! click-queue))
                           . ,update-list)))
               (set! update-list

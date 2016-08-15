@@ -269,6 +269,7 @@
   (define update-list `((,(state-elapsed state) . ,elapsed)))
   (define (def? meth) (mecs-var-defined? (mecs-var-node-var (meth state))))
   (define (val meth) (mecs-var-value (mecs-var-node-var (meth state))))
+  (define (dur start end) (* 300 (vector4f-norm (- end start))))
 
   (unless (queue-empty? click-queue)
           (if (def? state-start-pos)
@@ -278,15 +279,16 @@
                                 (start (val state-end-pos)))
                             (set! update-list
                                   `((,(state-start-time state) . ,elapsed)
-                                    (,(state-end-time state) . ,(+ elapsed 1000))
+                                    (,(state-end-time state) . ,(+ elapsed (dur start head)))
                                     (,(state-start-pos state) . ,start)
                                     (,(state-end-pos state) . ,head)
                                     . ,update-list))))
-                  (set! update-list
-                        `((,(state-start-time state) . ,elapsed)
-                          (,(state-end-time state) . ,(+ elapsed 1000))
-                          (,(state-end-pos state) . ,(dequeue! click-queue))
-                          . ,update-list)))
+                  (let1 head (dequeue! click-queue)
+                        (set! update-list
+                              `((,(state-start-time state) . ,elapsed)
+                                (,(state-end-time state) . ,(+ elapsed (dur (val state-start-pos) head)))
+                                (,(state-end-pos state) . ,head)
+                                . ,update-list))))
               (set! update-list
                     `((,(state-start-pos state) . ,(dequeue! click-queue))
                       . ,update-list))))

@@ -267,13 +267,15 @@
 
 (define (draw-world state elapsed click-queue)
   (define update-list `((,(state-elapsed state) . ,elapsed)))
+  (define (def? meth) (mecs-var-defined? (mecs-var-node-var (meth state))))
+  (define (val meth) (mecs-var-value (mecs-var-node-var (meth state))))
 
   (unless (queue-empty? click-queue)
-          (if (mecs-var-defined? (mecs-var-node-var (state-start-pos state)))
-              (if (mecs-var-defined? (mecs-var-node-var (state-end-pos state)))
-                  (unless (mecs-var-value (mecs-var-node-var (state-active? state)))
+          (if (def? state-start-pos)
+              (if (def? state-end-pos)
+                  (unless (val state-active?)
                           (let ((head (dequeue! click-queue))
-                                (start (mecs-var-value (mecs-var-node-var (state-end-pos state)))))
+                                (start (val state-end-pos)))
                             (set! update-list
                                   `((,(state-start-time state) . ,elapsed)
                                     (,(state-end-time state) . ,(+ elapsed 1000))

@@ -1,0 +1,3 @@
+test:
+	gosh ./test.scm
+

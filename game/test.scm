@@ -5,20 +5,20 @@
 
 (test-section "初めの町")
 
-(mecs-update! `((,home . #t)))
+(mecs-update! `((,loc:home . #t)))
 
-(mecs-update! `((,ui-home->smith . #t)))
+(mecs-update! `((,ui:home->smith . #t)))
 
 (mecs-update! `((,has-stone? . #f)))
 
-(mecs-update! `((,ui-smith->hill . #t)))
+(mecs-update! `((,ui:smith->hill . #t)))
 
-(mecs-update! `((,ui-pick-stone . #t)))
+(mecs-update! `((,ui:pick-stone . #t)))
 
-(mecs-update! `((,ui-hill->smith . #t)))
+(mecs-update! `((,ui:hill->smith . #t)))
 
-(mecs-update! `((,ui-pick-knife . #t)))
+(mecs-update! `((,ui:pick-knife . #t)))
 
-(mecs-update! `((,ui-smith->hilou . #t)))
+(mecs-update! `((,ui:smith->hilou . #t)))
 
 (test-end)

@@ -73,7 +73,7 @@
  (lambda ()
    (print "わたし「あそこに光る石がある！」")
    (print "わたし「あれを鍛冶屋さんに持って行けばいいのね」"))
- loc:home)
+ loc:hill)
 
 (add-path! ui:smith->hill loc:smith loc:hill)
 (add-path! ui:hill->smith loc:hill loc:smith)

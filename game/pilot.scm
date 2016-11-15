@@ -22,7 +22,7 @@
    (mecs-new-func
     (lambda (loc . rest)    ; -> ()
       (skip-if (not loc))
-      (print name)
+      (print #`"[,|name|]")
       (apply proc rest)
       (values)))
    (cons loc inputs) ()))
@@ -31,6 +31,7 @@
   (mecs-connect!
    (mecs-new-func (lambda (trigger)
                     (skip-if (not trigger))
+                    (print "--->---")
                     (values #f #t)))
    `(,trigger) `(,from ,to)))
 

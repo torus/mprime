@@ -35,11 +35,16 @@
                     (values #f #t)))
    `(,trigger) `(,from ,to)))
 
+(define (show-trigger trigger-name destination)
+  (print #`"* ,|destination| ,`(mecs-update! `((,,trigger-name . #t)))")
+  )
+
 (add-location!
  "わたしの家"
  (lambda ()
-   (print "お母さん「鍛冶屋さんで包丁を作ってもらって、」")
+   (print "お母さん「鍛冶屋のシナガーさんに包丁を作ってもらって、」")
    (print "お母さん「ヒロウ村のおじいちゃんに持って行ってちょうだい」")
+   (show-trigger 'ui:home->smith "鍛冶屋さんへ")
    )
  loc:home)
 
@@ -51,13 +56,16 @@
  (lambda (has-stone?)
    (if has-stone?
        (begin
-         (print "鍛冶屋「これは良い石だ。見つけてきてくれてありがとう」")
-         (print "鍛冶屋「この包丁をおじいさんに持って行きなさい」"))
+         (print "鍛冶屋シナガー「これは良い石だ。見つけてきてくれてありがとう」")
+         (print "鍛冶屋シナガー「この包丁をおじいさんに持って行きなさい」")
+         (show-trigger 'ui:pick-knife "包丁を受け取る")
+         (show-trigger 'ui:smith->hilou "ヒロウ村へ"))
        (begin
          (print "わたし「鍛冶屋さんこんにちは」")
          (print "わたし「ヒロウ村のおじいさんの為に包丁をください」")
-         (print "鍛冶屋「あいにく石を切らしてしまって包丁が作れないんだよ」")
-         (print "鍛冶屋「山へ行って石を拾ってきてくれるかい？」")
+         (print "鍛冶屋シナガー「あいにく砥石がなくて包丁が作れないんだよ」")
+         (print "鍛冶屋シナガー「オシャーゲ山へ行って光るアカッカ石を拾ってきてくれるかい？」")
+         (show-trigger 'ui:smith->hill "オシャーゲ山へ")
          )
        ))
  loc:smith has-stone?)
@@ -65,7 +73,7 @@
 (define pick-knife
  (mecs-new-func (lambda (ui:pick-knife) ; -> has-knife?
                   (skip-if (not ui:pick-knife))
-                  (print "包丁を手に入れた")
+                  (print "シナガーの包丁を手に入れた")
                   #t)))
 (mecs-connect! pick-knife `(,ui:pick-knife) `(,has-knife?))
 
@@ -73,7 +81,9 @@
  "山"
  (lambda ()
    (print "わたし「あそこに光る石がある！」")
-   (print "わたし「あれを鍛冶屋さんに持って行けばいいのね」"))
+   (print "わたし「あれを鍛冶屋さんに持って行けばいいのね」")
+   (show-trigger 'ui:pick-stone "石を拾う")
+   )
  loc:hill)
 
 (add-path! ui:smith->hill loc:smith loc:hill)

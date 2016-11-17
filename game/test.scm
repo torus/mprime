@@ -9,7 +9,7 @@
 
 (mecs-update! `((,ui:home->smith . #t)))
 
-(mecs-update! `((,has-stone? . #f)))
+(mecs-update! `((,has-knife? . #f) (,has-stone? . #f)))
 
 (mecs-update! `((,ui:smith->hill . #t)))
 

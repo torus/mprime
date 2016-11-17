@@ -82,6 +82,7 @@
     (mecs-var-node-visited?-set! n #t)
     (set! visited (cons n visited)))
   (define visited? mecs-var-node-visited?)
+  (define func-visited (make-hash-table))
 
   (mecs-set-vars! node-value-pairs)
 
@@ -92,8 +93,12 @@
             (targets ()))
 
         (for-each (lambda (func-node)
-                    (when (mecs-func-node-update! func-node)
-                      (set! targets (append targets (mecs-func-node-outputs func-node)))))
+                    (when (and
+                           (not (hash-table-get func-visited func-node #f))
+                           (mecs-func-node-update! func-node))
+                          (set! targets (append targets (mecs-func-node-outputs func-node)))
+                          (hash-table-put! func-visited func-node #t)
+                          ))
                   (mecs-var-node-outputs node))
 
         (for-each (^(node)

@@ -143,6 +143,22 @@
           (test* "n5" 4 (mecs-var-value (mecs-var-node-var n5)))
           (test* "n6" 3 (mecs-var-value (mecs-var-node-var n6)))
           (test* "n8" 2 (mecs-var-value (mecs-var-node-var n8)))
+          )))
+
+(desc "A function should be called only once"
+      (lambda ()
+        (define count 0)
+        (let ((n1 (mecs-new-var))
+              (n2 (mecs-new-var))
+              (n3 (mecs-new-var))
+              (f1 (mecs-new-func (lambda (a b c)
+                                   (inc! count)))))
+          (mecs-connect! f1 `(,n1 ,n2 ,n3) `())
+
+          (mecs-update! `((,n1 . 1)))
+          (mecs-update! `((,n2 . 2) (,n3 . 3)))
+
+          (test* "count" 1 count)
         )))
 
 (desc "Exception"

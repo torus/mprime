@@ -94,7 +94,7 @@
 
         (for-each (lambda (func-node)
                     (when (and
-                           (not (hash-table-get func-visited func-node #f))
+                           (not (hash-table-exists? func-visited func-node))
                            (mecs-func-node-update! func-node))
                           (set! targets (append targets (mecs-func-node-outputs func-node)))
                           (hash-table-put! func-visited func-node #t)

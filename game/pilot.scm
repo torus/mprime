@@ -6,22 +6,29 @@
 (define (skip-if con)
   (when con (raise (condition (<mecs-skip-calculation>)))))
 
-(define scn:home (mecs-new-var))
-(define ui:home->smith-1 (mecs-new-var))
-(define ui:smith-1->home (mecs-new-var))
-(define scn:smith-1 (mecs-new-var))
-(define scn:smith-2 (mecs-new-var))
-(define scn:smith-3 (mecs-new-var))
-(define ui:smith-1->hill-1 (mecs-new-var))
-(define ui:hill-2->smith-2 (mecs-new-var))
-(define scn:hill-1 (mecs-new-var))
-(define scn:hill-2 (mecs-new-var))
-(define has-stone? (mecs-new-var))
-(define ui:pick-stone (mecs-new-var))
-(define ui:pick-knife (mecs-new-var))
-(define has-knife? (mecs-new-var))
-(define ui:smith-3->hilou (mecs-new-var))
-(define scn:hilou (mecs-new-var))
+(define chapter-1 (make-hash-table))
+(define (ch1 key)
+  (hash-table-get chapter-1 key))
+
+(define (ft-define-node table key)
+  (hash-table-put! table key (mecs-new-var)))
+
+(ft-define-node chapter-1 'scn:home)
+(ft-define-node chapter-1 'ui:home->smith-1)
+(ft-define-node chapter-1 'ui:smith-1->home)
+(ft-define-node chapter-1 'scn:smith-1)
+(ft-define-node chapter-1 'scn:smith-2)
+(ft-define-node chapter-1 'scn:smith-3)
+(ft-define-node chapter-1 'ui:smith-1->hill-1)
+(ft-define-node chapter-1 'ui:hill-2->smith-2)
+(ft-define-node chapter-1 'scn:hill-1)
+(ft-define-node chapter-1 'scn:hill-2)
+(ft-define-node chapter-1 'has-stone?)
+(ft-define-node chapter-1 'ui:pick-stone)
+(ft-define-node chapter-1 'ui:pick-knife)
+(ft-define-node chapter-1 'has-knife?)
+(ft-define-node chapter-1 'ui:smith-3->hilou)
+(ft-define-node chapter-1 'scn:hilou)
 
 (define (ft-add-scene! name proc loc . inputs)
   (mecs-connect!
@@ -52,10 +59,10 @@
    (print "お母さん「ヒロウ村のおじいちゃんに持って行ってちょうだい」")
    (ft-show-trigger 'ui:home->smith-1 "鍛冶屋さんへ")
    )
- scn:home)
+ (ch1 'scn:home))
 
-(ft-add-path! ui:home->smith-1 scn:home scn:smith-1)
-(ft-add-path! ui:smith-1->home scn:smith-1 scn:home)
+(ft-add-path! (ch1 'ui:home->smith-1) (ch1 'scn:home) (ch1 'scn:smith-1))
+(ft-add-path! (ch1 'ui:smith-1->home) (ch1 'scn:smith-1) (ch1 'scn:home))
 
 (ft-add-scene!
  "鍛冶屋 1"
@@ -65,7 +72,7 @@
    (print "鍛冶屋シナガー「あいにく砥石がなくて包丁が作れないんだよ」")
    (print "鍛冶屋シナガー「オシャーゲ山へ行って光るアカッカ石を拾ってきてくれるかい？」")
    (ft-show-trigger 'ui:smith-1->hill-1 "オシャーゲ山へ"))
- scn:smith-1)
+ (ch1 'scn:smith-1))
 
 (ft-add-scene!
  "鍛冶屋 2"
@@ -73,16 +80,16 @@
    (print "鍛冶屋シナガー「これは良い石だ。見つけてきてくれてありがとう」")
    (print "鍛冶屋シナガー「この包丁をおじいさんに持って行きなさい」")
    (ft-show-trigger 'ui:pick-knife "包丁を受け取る"))
- scn:smith-2)
+ (ch1 'scn:smith-2))
 
 (ft-add-scene!
  "鍛冶屋 3"
  (lambda ()
    (print "鍛冶屋シナガー「ヒロウ村は坂を降りたところだよ」")
    (ft-show-trigger 'ui:smith-3->hilou "ヒロウ村へ"))
- scn:smith-3)
+ (ch1 'scn:smith-3))
 
-(ft-add-path! ui:pick-knife scn:smith-2 scn:smith-3)
+(ft-add-path! (ch1 'ui:pick-knife) (ch1 'scn:smith-2) (ch1 'scn:smith-3))
 
 (ft-add-scene!
  "オシャーゲ山 1"
@@ -90,7 +97,7 @@
    (print "わたし「あそこに光る石がある！」")
    (ft-show-trigger 'ui:pick-stone "石を拾う")
    )
- scn:hill-1)
+ (ch1 'scn:hill-1))
 
 (ft-add-scene!
  "オシャーゲ山 2"
@@ -98,15 +105,15 @@
    (print "わたし「これを鍛冶屋さんに持って行けばいいのね」")
    (ft-show-trigger 'ui:hill-2->smith-2 "鍛冶屋さんへ")
    )
- scn:hill-2)
+ (ch1 'scn:hill-2))
 
-(ft-add-path! ui:pick-stone scn:hill-1 scn:hill-2)
+(ft-add-path! (ch1 'ui:pick-stone) (ch1 'scn:hill-1) (ch1 'scn:hill-2))
 
-(ft-add-path! ui:smith-1->hill-1 scn:smith-1 scn:hill-1)
-(ft-add-path! ui:hill-2->smith-2 scn:hill-2 scn:smith-2)
+(ft-add-path! (ch1 'ui:smith-1->hill-1) (ch1 'scn:smith-1) (ch1 'scn:hill-1))
+(ft-add-path! (ch1 'ui:hill-2->smith-2) (ch1 'scn:hill-2) (ch1 'scn:smith-2))
 
 ;; ヒロウ村へ
-(ft-add-path! ui:smith-3->hilou scn:smith-3 scn:hilou)
+(ft-add-path! (ch1 'ui:smith-3->hilou) (ch1 'scn:smith-3) (ch1 'scn:hilou))
 
 (ft-add-scene!
  "ヒロウ村"
@@ -114,4 +121,4 @@
    (print "わたし「おじちゃんはどこかな？」")
    (print "村人「おじいちゃんは港の近くの家にいるよ」")
    )
- scn:hilou)
+ (ch1 'scn:hilou))

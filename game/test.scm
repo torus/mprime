@@ -5,6 +5,8 @@
 
 (test-section "初めの町")
 
+(define ch1 (cut hash-table-get *tale* <>))
+
 (mecs-update! `((,(ch1 'scn:home) . #t)))
 
 (mecs-update! `((,(ch1 'ui:home->smith-1) . #t)))

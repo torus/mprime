@@ -6,10 +6,16 @@
 (define (skip-if con)
   (when con (raise (condition (<mecs-skip-calculation>)))))
 
-(define *tale* (make-hash-table))
+(define-record-type ft-tale #t #t
+  vars)
 
-(define (ft-add-var! table key)
-  (hash-table-put! table key (mecs-new-var)))
+(define (ft-new-tale)
+  (make-ft-tale (make-hash-table)))
+
+(define *tale* (ft-new-tale))
+
+(define (ft-add-var! tale key)
+  (hash-table-put! (ft-tale-vars tale) key (mecs-new-var)))
 
 (ft-add-var! *tale* 'scn:home)
 (ft-add-var! *tale* 'ui:home->smith-1)
@@ -28,7 +34,7 @@
 (ft-add-var! *tale* 'ui:smith-3->hilou)
 (ft-add-var! *tale* 'scn:hilou)
 
-(define (ft-add-scene! table name proc loc . inputs)
+(define (ft-add-scene! tale name proc loc . inputs)
   (mecs-connect!
    (mecs-new-func
     (lambda (loc . rest)    ; -> ()
@@ -36,16 +42,16 @@
       (print #`"[,|name|]")
       (apply proc rest)
       (values)))
-   (map (cut hash-table-get table <>) (cons loc inputs)) ()))
+   (map (cut hash-table-get (ft-tale-vars tale) <>) (cons loc inputs)) ()))
 
-(define (ft-add-path! table trigger from to)
+(define (ft-add-path! tale trigger from to)
   (mecs-connect!
    (mecs-new-func (lambda (trigger)
                     (skip-if (not trigger))
                     (print "--->---")
                     (values #f #t)))
-   (list (hash-table-get table trigger))
-   (map (cut hash-table-get table <>) `(,from ,to))))
+   (list (hash-table-get (ft-tale-vars tale) trigger))
+   (map (cut hash-table-get (ft-tale-vars tale) <>) `(,from ,to))))
 
 (define (ft-show-trigger trigger-name destination)
   (print #`"* ,|destination| ,`(mecs-update! `((,,trigger-name . #t)))")
@@ -56,6 +62,12 @@
 
 (define (tale-add-path! trigger from to)
   (ft-add-path! *tale* trigger from to))
+
+(define (tale-initialize!)
+  (mecs-update! `((,(hash-table-get (ft-tale-vars *tale*) 'scn:home) . #t))))
+
+(define (tale-trigger! trigger)
+  (mecs-update! `((,(hash-table-get (ft-tale-vars *tale*) trigger) . #t))))
 
 (tale-add-scene!
  "わたしの家"

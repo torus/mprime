@@ -5,28 +5,28 @@
 
 (test-section "初めの町")
 
-(define ch1 (cut hash-table-get *tale* <>))
+(define ch1 (cut hash-table-get (ft-tale-vars *tale*) <>))
 
-(mecs-update! `((,(ch1 'scn:home) . #t)))
+(tale-initialize!)
 
-(mecs-update! `((,(ch1 'ui:home->smith-1) . #t)))
+(tale-trigger! 'ui:home->smith-1)
 
 (test* "smith-1" #t (mecs-var-value (mecs-var-node-var (ch1 'scn:smith-1))))
 
-(mecs-update! `((,(ch1 'ui:smith-1->hill-1) . #t)))
+(tale-trigger! 'ui:smith-1->hill-1)
 
 (test* "hill-1" #t (mecs-var-value (mecs-var-node-var (ch1 'scn:hill-1))))
 
-(mecs-update! `((,(ch1 'ui:pick-stone) . #t)))
+(tale-trigger! 'ui:pick-stone)
 
 (test* "hill-2" #t (mecs-var-value (mecs-var-node-var (ch1 'scn:hill-2))))
 
-(mecs-update! `((,(ch1 'ui:hill-2->smith-2) . #t)))
+(tale-trigger! 'ui:hill-2->smith-2)
 
 (test* "smith-2" #t (mecs-var-value (mecs-var-node-var (ch1 'scn:smith-2))))
 
-(mecs-update! `((,(ch1 'ui:pick-knife) . #t)))
+(tale-trigger! 'ui:pick-knife)
 
-(mecs-update! `((,(ch1 'ui:smith-3->hilou) . #t)))
+(tale-trigger! 'ui:smith-3->hilou)
 
 (test-end)

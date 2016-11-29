@@ -73,10 +73,15 @@
 (define (tale-trigger-enabled? trigger)
   (hash-table-exists? (ft-tale-triggers *tale*) trigger))
 
+(define-condition-type <trigger-is-not-available> <error> #f)
+
 (define (tale-trigger! trigger)
   (if (tale-trigger-enabled? trigger)
-      (mecs-update! `((,(hash-table-get (ft-tale-vars *tale*) trigger) . #t)))
-      (error #`"Trigger is not enabled: ,trigger")))
+      (begin
+        (hash-table-clear! (ft-tale-triggers *tale*))
+        (mecs-update! `((,(hash-table-get (ft-tale-vars *tale*) trigger) . #t)))
+        )
+      (error <trigger-is-not-available>)))
 
 (tale-add-scene!
  "わたしの家"

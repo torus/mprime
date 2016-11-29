@@ -14,6 +14,9 @@
 
 (test* "smith-1" #t (get-value 'scn:smith-1))
 
+(test "trigger 'ui:pick-stone is not available" (test-error <trigger-is-not-available>)
+      (cut tale-trigger! 'ui:pick-stone))
+
 (tale-trigger! 'ui:smith-1->hill-1)
 
 (test* "hill-1" #t (get-value 'scn:hill-1))

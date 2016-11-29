@@ -7,10 +7,11 @@
   (when con (raise (condition (<mecs-skip-calculation>)))))
 
 (define-record-type ft-tale #t #t
-  vars)
+  vars
+  triggers)
 
 (define (ft-new-tale)
-  (make-ft-tale (make-hash-table)))
+  (make-ft-tale (make-hash-table) (make-hash-table)))
 
 (define *tale* (ft-new-tale))
 
@@ -53,9 +54,12 @@
    (list (hash-table-get (ft-tale-vars tale) trigger))
    (map (cut hash-table-get (ft-tale-vars tale) <>) `(,from ,to))))
 
-(define (ft-show-trigger trigger-name destination)
+(define (ft-show-trigger tale trigger-name destination)
   (print #`"* ,|destination| ,`(mecs-update! `((,,trigger-name . #t)))")
-  )
+  (hash-table-put! (ft-tale-triggers tale) trigger-name #t))
+
+(define (tale-add-trigger! trigger-name destination)
+  (ft-show-trigger *tale* trigger-name destination))
 
 (define (tale-add-scene! name proc loc . inputs)
   (apply ft-add-scene! *tale* name proc loc inputs))
@@ -66,15 +70,20 @@
 (define (tale-initialize!)
   (mecs-update! `((,(hash-table-get (ft-tale-vars *tale*) 'scn:home) . #t))))
 
+(define (tale-trigger-enabled? trigger)
+  (hash-table-exists? (ft-tale-triggers *tale*) trigger))
+
 (define (tale-trigger! trigger)
-  (mecs-update! `((,(hash-table-get (ft-tale-vars *tale*) trigger) . #t))))
+  (if (tale-trigger-enabled? trigger)
+      (mecs-update! `((,(hash-table-get (ft-tale-vars *tale*) trigger) . #t)))
+      (error #`"Trigger is not enabled: ,trigger")))
 
 (tale-add-scene!
  "わたしの家"
  (lambda ()
    (print "お母さん「鍛冶屋のシナガーさんに包丁を作ってもらって、」")
    (print "お母さん「ヒロウ村のおじいちゃんに持って行ってちょうだい」")
-   (ft-show-trigger 'ui:home->smith-1 "鍛冶屋さんへ")
+   (tale-add-trigger! 'ui:home->smith-1 "鍛冶屋さんへ")
    )
  'scn:home)
 
@@ -88,7 +97,7 @@
    (print "わたし「ヒロウ村のおじいさんの為に包丁をください」")
    (print "鍛冶屋シナガー「あいにく砥石がなくて包丁が作れないんだよ」")
    (print "鍛冶屋シナガー「オシャーゲ山へ行って光るアカッカ石を拾ってきてくれるかい？」")
-   (ft-show-trigger 'ui:smith-1->hill-1 "オシャーゲ山へ"))
+   (tale-add-trigger! 'ui:smith-1->hill-1 "オシャーゲ山へ"))
  'scn:smith-1)
 
 (tale-add-scene!
@@ -96,14 +105,14 @@
  (lambda ()
    (print "鍛冶屋シナガー「これは良い石だ。見つけてきてくれてありがとう」")
    (print "鍛冶屋シナガー「この包丁をおじいさんに持って行きなさい」")
-   (ft-show-trigger 'ui:pick-knife "包丁を受け取る"))
+   (tale-add-trigger! 'ui:pick-knife "包丁を受け取る"))
  'scn:smith-2)
 
 (tale-add-scene!
  "鍛冶屋 3"
  (lambda ()
    (print "鍛冶屋シナガー「ヒロウ村は坂を降りたところだよ」")
-   (ft-show-trigger 'ui:smith-3->hilou "ヒロウ村へ"))
+   (tale-add-trigger! 'ui:smith-3->hilou "ヒロウ村へ"))
  'scn:smith-3)
 
 (tale-add-path! 'ui:pick-knife 'scn:smith-2 'scn:smith-3)
@@ -112,7 +121,7 @@
  "オシャーゲ山 1"
  (lambda ()
    (print "わたし「あそこに光る石がある！」")
-   (ft-show-trigger 'ui:pick-stone "石を拾う")
+   (tale-add-trigger! 'ui:pick-stone "石を拾う")
    )
  'scn:hill-1)
 
@@ -120,7 +129,7 @@
  "オシャーゲ山 2"
  (lambda ()
    (print "わたし「これを鍛冶屋さんに持って行けばいいのね」")
-   (ft-show-trigger 'ui:hill-2->smith-2 "鍛冶屋さんへ")
+   (tale-add-trigger! 'ui:hill-2->smith-2 "鍛冶屋さんへ")
    )
  'scn:hill-2)
 
